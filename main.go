@@ -15,7 +15,7 @@ const (
 
 // generateRandomElements generates random elements.
 func generateRandomElements(size int) []int {
-	var data []int
+	data := make([]int, size)
 	if size == 0 {
 		log.Println("size must not be zero")
 		return data
@@ -24,11 +24,9 @@ func generateRandomElements(size int) []int {
 		log.Println("the size must not be less than zero")
 		return data
 	}
-
-	src := rand.NewSource(time.Now().Unix())
 	for i := 0; i < size; i++ {
-		randomNumber := src.Int63()
-		data = append(data, int(randomNumber))
+		randomNumber := rand.Int()
+		data[i] = randomNumber
 	}
 	return data
 }
@@ -38,15 +36,14 @@ func maximum(data []int) int {
 	var max int
 	if len(data) == 0 {
 		log.Println("slice must not be zero")
-		return max
+		return 0
 	}
 	if len(data) == 1 {
 		log.Println("to find the maximum number you need at least two numbers")
-		return max
+		return data[0]
 	}
-
 	for _, num := range data {
-		if num >= max {
+		if num > max {
 			max = num
 		}
 	}
@@ -61,28 +58,25 @@ func maxChunks(data []int) int {
 	}
 	if len(data) == 1 {
 		log.Println("to find the maximum number you need at least two numbers")
-		return 0
+		return data[0]
 	}
-	if len(data)%CHUNKS != 0 {
-		log.Printf("the slice size must be a multiple of %d\n", CHUNKS)
-		return 0
-	}
-	var mu sync.Mutex
+
+	maxData := make([]int, CHUNKS)
 	var wg sync.WaitGroup
-	var maxData []int
 	sizeChunk := len(data) / CHUNKS
 
 	for i := 0; i < CHUNKS; i++ {
-		newData := data[i*sizeChunk : (i+1)*sizeChunk]
+		var maxNumber int
+		startIndex := i * sizeChunk
+		endIndex := startIndex + sizeChunk
 		wg.Add(1)
-		go func() {
-
+		go func(start, end int) {
 			defer wg.Done()
-			maxNumber := maximum(newData)
-			mu.Lock()
-			maxData = append(maxData, maxNumber)
-			mu.Unlock()
-		}()
+			newData := data[start:end]
+			maxNumber = maximum(newData)
+			maxData[i] = maxNumber
+		}(startIndex, endIndex)
+
 	}
 	wg.Wait()
 	max := maximum(maxData)
